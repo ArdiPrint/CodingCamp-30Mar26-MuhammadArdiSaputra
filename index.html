@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Expense & Budget Visualizer</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f9f9f9;
+    min-height: 100vh;
+    position: relative;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  form {
+    max-width: 420px;
+    margin: 0 auto 30px auto;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 0 8px #ccc;
+  }
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: bold;
+  }
+  select, input[type="number"] {
+    width: 100%;
+    padding: 8px 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+  input[type="number"]:disabled {
+    background-color: #eee;
+    cursor: not-allowed;
+  }
+  button {
+    width: 100%;
+    padding: 10px 0;
+    background-color: #28a745;
+    border: none;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background-color: #218838;
+  }
+  #totalBalance {
+    max-width: 420px;
+    margin: 0 auto 20px auto;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    color: #333;
+  }
+  #transactionList {
+    max-width: 420px;
+    margin: 0 auto 30px auto;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 0 6px #ccc;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .transaction-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+  }
+  .transaction-details {
+    flex-grow: 1;
+  }
+  .transaction-name {
+    font-weight: bold;
+  }
+  .transaction-category {
+    font-size: 12px;
+    color: #666;
+    margin-left: 4px;
+  }
+  .transaction-amount {
+    margin-left: 10px;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+  .delete-btn {
+    background-color: #dc3545;
+    border: none;
+    color: white;
+    padding: 4px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-left: 10px;
+  }
+  .delete-btn:hover {
+    background-color: #bd2130;
+  }
+  #chartContainer {
+    max-width: 420px;
+    margin: 0 auto;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 0 6px #ccc;
+  }
+  /* Watermark style */
+  .watermark {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    color: rgba(0,0,0,0.1);
+    font-size: 48px;
+    font-weight: bold;
+    user-select: none;
+    pointer-events: none;
+    z-index: 1000;
+    transform: rotate(-30deg);
+  }
+</style>
+</head>
+<body>
+<h1>Expense & Budget Visualizer</h1>
+
+<div id="totalBalance">Total Balance: $0.00</div>
+
+<form id="transactionForm" autocomplete="off">
+  <label for="category">Category</label>
+  <select id="category" required>
+    <option value="">-- Pilih Kategori --</option>
+    <option value="Food">Food</option>
+    <option value="Fun">Fun</option>
+    <option value="Transport">Transport</option>
+  </select>
+
+  <label for="itemName">Item Name</label>
+  <select id="itemName" required disabled>
+    <option value="">-- Pilih Item --</option>
+  </select>
+
+  <label for="amount">Amount ($)</label>
+  <input type="number" id="amount" min="0.01" step="0.01" placeholder="Masukkan jumlah" required disabled />
+
+  <button type="submit">Add Transaction</button>
+</form>
+
+<div id="transactionList"></div>
+
+<div id="chartContainer">
+  <canvas id="pieChart"></canvas>
+</div>
+
+<div class="watermark">Ardi</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const categorySelect = document.getElementById('category');
+  const itemNameSelect = document.getElementById('itemName');
+  const amountInput = document.getElementById('amount');
+  const form = document.getElementById('transactionForm');
+  const transactionListElem = document.getElementById('transactionList');
+  const totalBalanceElem = document.getElementById('totalBalance');
+
+  const itemsByCategory = {
+    Food: [
+      {name: "Cilok Street Snack", amount: 1.56},
+      {name: "Nasi Goreng Special", amount: 2.75},
+      {name: "Mie Ayam Bowl", amount: 2.40},
+      {name: "Bakso Meatball Soup", amount: 2.90},
+      {name: "Ayam Geprek Spicy", amount: 3.10}
+    ],
+    Fun: [
+      {name: "Movie Ticket (Nonton Bioskop)", amount: 5.20},
+      {name: "Gaming Session (Warnet/Game)", amount: 3.60},
+      {name: "Karaoke Night", amount: 4.30},
+      {name: "Cafe Hangout (Ngopi Santai)", amount: 3.50},
+      {name: "Billiard Time", amount: 3.90}
+    ],
+    Transport: [
+      {name: "Ojek Online Ride", amount: 1.70},
+      {name: "Bus Ticket", amount: 0.90},
+      {name: "Train Ride (Kereta)", amount: 2.20},
+      {name: "Fuel / Bensin", amount: 4.80},
+      {name: "Taxi Ride", amount: 3.70}
+    ]
+  };
+
+  let transactions = [];
+
+  // Enable/Disable itemName and amount based on category selection
+  categorySelect.addEventListener('change', () => {
+    const category = categorySelect.value;
+    itemNameSelect.innerHTML = '<option value="">-- Pilih Item --</option>';
+    amountInput.value = '';
+    amountInput.disabled = true;
+
+    if (!category) {
+      itemNameSelect.disabled = true;
+      return;
+    }
+
+    itemNameSelect.disabled = false;
+    itemsByCategory[category].forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item.name;
+      opt.textContent = item.name;
+      opt.dataset.amount = item.amount;
+      itemNameSelect.appendChild(opt);
+    });
+  });
+
+  // When item selected, enable amount input & fill default price
+  itemNameSelect.addEventListener('change', () => {
+    const selectedOption = itemNameSelect.selectedOptions[0];
+    if(selectedOption && selectedOption.dataset.amount){
+      amountInput.disabled = false;
+      amountInput.value = parseFloat(selectedOption.dataset.amount).toFixed(2);
+    } else {
+      amountInput.value = '';
+      amountInput.disabled = true;
+    }
+  });
+
+  const ctx = document.getElementById('pieChart').getContext('2d');
+  let chart;
+
+  function updateTransactionList(){
+    transactionListElem.innerHTML = '';
+    if(transactions.length === 0){
+      transactionListElem.innerHTML = '<p style="text-align:center; color:#777;">No transactions added.</p>';
+      return;
+    }
+    transactions.forEach((tx,index) => {
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'transaction-item';
+
+      const detailsDiv = document.createElement('div');
+      detailsDiv.className = 'transaction-details';
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'transaction-name';
+      nameSpan.textContent = tx.name;
+
+      const categorySpan = document.createElement('span');
+      categorySpan.className = 'transaction-category';
+      categorySpan.textContent = `(${tx.category})`;
+
+      detailsDiv.appendChild(nameSpan);
+      detailsDiv.appendChild(categorySpan);
+
+      const amountSpan = document.createElement('span');
+      amountSpan.className = 'transaction-amount';
+      amountSpan.textContent = `$${tx.amount.toFixed(2)}`;
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'delete-btn';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.onclick = () => {
+        transactions.splice(index, 1);
+        refreshAll();
+      };
+
+      itemDiv.appendChild(detailsDiv);
+      itemDiv.appendChild(amountSpan);
+      itemDiv.appendChild(deleteBtn);
+
+      transactionListElem.appendChild(itemDiv);
+    });
+  }
+
+  function updateTotalBalance(){
+    const total = transactions.reduce((acc,tx) => acc + tx.amount,0);
+    totalBalanceElem.textContent = `Total Balance: $${total.toFixed(2)}`;
+  }
+
+  function updateChart(){
+    const categories = ['Food','Fun','Transport'];
+    const amountsByCat = categories.map(cat =>
+      transactions.filter(tx => tx.category === cat)
+                  .reduce((acc, tx) => acc + tx.amount, 0)
+    );
+    const data = {
+      labels: categories,
+      datasets: [{
+        label: 'Spending by Category',
+        data: amountsByCat,
+        backgroundColor: ['#FFA07A', '#20B2AA', '#FFD700'],
+      }]
+    };
+
+    if(chart){
+      chart.data = data;
+      chart.update();
+    } else {
+      chart = new Chart(ctx, {
+        type: 'pie',
+        data: data,
+        options: {
+          responsive: true,
+          plugins: {legend: {position:'bottom'}}
+        }
+      });
+    }
+  }
+
+  function refreshAll(){
+    updateTransactionList();
+    updateTotalBalance();
+    updateChart();
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const category = categorySelect.value.trim();
+    const name = itemNameSelect.value.trim();
+    const amount = parseFloat(amountInput.value);
+
+    if(!category){
+      alert('Please select a Category.');
+      return;
+    }
+    if(!name){
+      alert('Please select an Item Name.');
+      return;
+    }
+    if(isNaN(amount) || amount <= 0){
+      alert('Please enter a valid Amount.');
+      return;
+    }
+
+    transactions.push({name, amount, category});
+    form.reset();
+    itemNameSelect.innerHTML = '<option value="">-- Pilih Item --</option>';
+    itemNameSelect.disabled = true;
+    amountInput.value = '';
+    amountInput.disabled = true;
+    refreshAll();
+  });
+
+  // Initialize state on page load
+  itemNameSelect.disabled = true;
+  amountInput.disabled = true;
+  refreshAll();
+</script>
+</body>
+</html>
