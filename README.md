@@ -6,13 +6,13 @@
       <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
       </div>
 
-      # 💸 Expense & Budget Visualizer
+      # Expense & Budget Visualizer
 
       A simple web application to track expenses and visualize spending by category using a pie chart.
 
       ---
 
-      ## 🚀 Features
+      ## Features
       - Add transactions based on category (Food, Fun, Transport)
       - Auto-fill item price based on selection
       - Calculate total balance automatically
@@ -21,7 +21,7 @@
 
       ---
 
-      ## 🛠️ Technologies Used
+      ## Technologies Used
       - HTML
       - CSS
       - Vanilla JavaScript
@@ -29,14 +29,14 @@
 
       ---
 
-      ## ▶️ How to Run
+      ##  How to Run
       1. Download or clone this repository
       2. Open `index.html` in your browser
-      3. Start adding transactions 🎉
+      3. Start adding transactions 
 
       ---
 
-      ## 🧠 How It Works
+      ## How It Works
       - User selects a category
       - Item list updates dynamically
       - Price is auto-filled based on selected item
@@ -46,12 +46,12 @@
 
       ---
 
-      ## 👤 Author
+      ## Author
       - ardi
 
       ---
 
-      ## 💡 Notes
+      ##  Notes
       This project is built using **Vanilla JavaScript** for the main logic, with **Chart.js** used for data visualization.
 
       ---
